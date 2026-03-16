@@ -1,0 +1,24 @@
+# Python virtual environments
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+
+# Environment variables (API Keys)
+.env
+.streamlit/secrets.toml
+
+# Plot Images
+*.png
+*.jpg
+*.jpeg
+
+# Streamlit
+.streamlit/
