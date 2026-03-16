@@ -133,8 +133,8 @@ def analyze_trend_short(df_pivot, selected_category=""):
     if season_comment:
         insight_parts.append(f"▶ [시즌] {season_comment}")
 
-    # 최종 조립 (항목이 없으면 생략)
-    return "\n".join(insight_parts) if insight_parts else "특이한 트렌드 변화 없이 평이한 흐름을 보이고 있습니다."
+    # 최종 조립 (항목 간 간격 추가)
+    return "\n\n".join(insight_parts) if insight_parts else "특이한 트렌드 변화 없이 평이한 흐름을 보이고 있습니다."
 
 # ==========================================
 # 4. 전체 실행 및 시각화 프로세스
