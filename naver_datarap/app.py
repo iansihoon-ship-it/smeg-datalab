@@ -12,16 +12,16 @@ def init_page():
         page_icon="📈",
         layout="wide"
     )
-    st.title("📈 네이버 데이터랩 브랜드 트렌드 탐색기")
-    st.markdown("""
-        네이버 데이터랩 API를 활용하여 각 카테고리별 주요 브랜드의 **최근 3개월 검색 트렌드**를 제공합니다.
-        좌측 사이드바에서 분석을 원하는 카테고리를 선택해 주세요.
-    """)
 
 def main():
     init_page()
     
-    # 1. 사이드바 - 카테고리 선택
+    # 1. 사이드바 - 타이틀 및 카테고리 선택
+    st.sidebar.title("📈 네이버 데이터랩")
+    st.sidebar.markdown("""
+        네이버 데이터랩 API를 활용하여 각 카테고리별 주요 브랜드의 **최근 3개월 검색 트렌드**를 제공합니다.
+    """)
+    st.sidebar.write("---")
     st.sidebar.header("🔍 카테고리 선택")
     category_list = list(CATEGORIES.keys())
     selected_category = st.sidebar.selectbox("비교할 카테고리를 선택하세요", category_list)
