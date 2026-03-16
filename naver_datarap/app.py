@@ -26,7 +26,7 @@ def main():
     category_list = list(CATEGORIES.keys())
     selected_category = st.sidebar.selectbox("비교할 카테고리를 선택하세요", category_list)
 
-    st.write("---")
+
     st.subheader(f"[{selected_category}] 브랜드 트렌드 분석")
     
     # 선택된 카테고리의 브랜드 목록
