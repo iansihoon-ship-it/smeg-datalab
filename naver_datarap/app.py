@@ -63,7 +63,7 @@ def main():
     
     st.markdown("### 💡 AI 트렌드 인사이트")
     # 30자 이상 비즈니스 요약 도출
-    analysis_text = analyze_trend_short(df_pivot)
+    analysis_text = analyze_trend_short(df_pivot, selected_category)
     
     # X축(날짜) 포맷을 연-월-일(YY-MM-DD) 형식으로 변경 (차트 정렬 오류 방지)
     df_chart = df_pivot.copy()

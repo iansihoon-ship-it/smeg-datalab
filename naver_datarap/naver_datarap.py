@@ -74,38 +74,67 @@ def get_datalab_trend(category, brands):
 # ==========================================
 # 3. 비즈니스 인사이트 트렌드 분석 함수 (스메그 마케터 관점)
 # ==========================================
-def analyze_trend_short(df_pivot):
-    if len(df_pivot) < 2:
-        return "데이터 부족으로 유의미한 트렌드 진단이 어렵습니다. 향후 데이터가 누적되면 다시 확인해 주세요."
+# 카테고리별 주요 시즌 이슈 정의
+SEASON_ISSUES = {
+    "냉장고": {"months": [3, 4, 5, 10, 11], "issue": "이사 및 혼수 가전 수요가 집중되는 시즌입니다."},
+    "인덕션": {"months": [3, 4, 10, 11, 12], "issue": "주방 리모델링 및 연말 홈파티 수요가 발생하는 시기입니다."},
+    "와인셀러": {"months": [11, 12, 1], "issue": "연말연시 파티 및 연간 와인 소비량이 가장 높은 극성수기입니다."},
+    "커피머신": {"months": [5, 11, 12], "issue": "가정의 달 및 크리스마스 선물 수요가 급증하는 시기입니다."},
+    "전기포트": {"months": [11, 12, 1, 2], "issue": "기온 하락으로 인한 따뜻한 음료 수요가 늘어나는 동절기 시즌입니다."},
+    "오븐": {"months": [11, 12, 2], "issue": "홈베이킹 및 졸업/입학 시즌 선물 수요가 발생하는 시기입니다."}
+}
+
+def analyze_trend_short(df_pivot, selected_category=""):
+    if len(df_pivot) < 4:
+        return "데이터가 충분하지 않아 상세 분석이 어렵습니다."
     
+    # 1. 상태 요약 (마지막 주 기준)
     last_week = df_pivot.iloc[-1]
-    prev_week = df_pivot.iloc[-2]
-    
-    # 현재 1위 브랜드 및 검색 지수
     top_brand = last_week.idxmax()
-    top_score = last_week.max()
-    
-    # 스메그 점수 확인 (자사 기준)
     smeg_score = last_week.get("스메그", 0)
     
-    # 전주 대비 상승폭 계산
-    diff = last_week - prev_week
-    rising_brand = diff.idxmax()
-    max_rise = diff.max()
+    # 2. 급상승(스파이크) 감지 로직
+    # 전주 대비 20% 이상 급상승한 일자와 브랜드 탐색
+    diff_pct = (df_pivot.pct_change() * 100).fillna(0)
+    spikes = []
     
-    # 30자 이상의 스메그(SMEG) 마케터 관점 비즈니스 인사이트 생성 로직
+    # 최근 4주 데이터 중 눈에 띄게 튄 지점 탐색
+    recent_diff = diff_pct.tail(4)
+    for date, row in recent_diff.iterrows():
+        for brand, val in row.items():
+            if val > 40: # 40% 이상 급상승 시 유의미한 이벤트로 간주
+                formatted_date = date if isinstance(date, str) else date.strftime('%Y-%m-%d')
+                spikes.append(f"'{brand}' 브랜드가 {formatted_date}경 검색량이 급증했습니다.")
+    
+    # 3. 시즌 이슈 확인
+    current_month = datetime.now().month
+    season_comment = ""
+    if selected_category in SEASON_ISSUES:
+        issue_info = SEASON_ISSUES[selected_category]
+        if current_month in issue_info["months"]:
+            season_comment = f"현재 {selected_category} 카테고리는 {issue_info['issue']}"
+
+    # 4. 종합 인사이트 조립
+    insight_parts = []
+    
+    # [섹션 1: 순위 진단]
     if top_brand == "스메그":
-        if top_brand == rising_brand and max_rise > 10:
-            insight = f"▶ [자사 우위] 자사(스메그)가 검색지수 {top_score:.1f}로 압도적 1위를 기록하며 브랜드 파워를 과시 중입니다. 최근 진행된 스메그 중심의 프로모션 혜택이나 오프라인 행사의 바이럴 효과로 소비자 관심도가 급등한 것으로 분석됩니다. 이 기세를 몰아 프리미엄 시장 점유율을 더욱 공고히 할 적기입니다."
-        else:
-            insight = f"▶ [수성 유지] 자본과 프리미엄 브랜드 이미지가 견고하게 맞물려 자사(스메그)가 1위를 안정적으로 이끌고 있습니다. 다만 경쟁사가 신제품 출시나 특가 이벤트로 언제든 치고 올라올 수 있으니, 스메그만의 오리지널리티를 강조하는 브랜드 캠페인을 지속 전개해야 합니다."
+        insight_parts.append(f"▶ [수성] 자사(스메그)가 {last_week.max():.1f}의 지수로 시장 점유 1위를 유지하며 견고한 브랜드 선호도를 보이고 있습니다.")
     else:
-        if rising_brand == "스메그" and max_rise > 5:
-            insight = f"▶ [추격 모멘텀] 현재 전체 1위는 '{top_brand}'에 내주었지만, 자사(스메그) 검색량이 눈에 띄게 상승하며 1위를 맹렬히 뒤쫓고 있습니다. 최근 전개된 스메그의 감성 캠페인이나 한정판 에디션 전략이 소비자들의 호기심을 효과적으로 자극한 결과입니다. 이 상승세를 구매로 직결시킬 온라인 프로모션 기획이 필요합니다."
-        else:
-            insight = f"▶ [위기 및 과제] '{top_brand}'가 선두를 달리는 가운데 자사(스메그)의 검색량은 {smeg_score:.1f}에 그쳐 다소 정체된 흐름입니다. 경쟁 브랜드가 대규모 광고나 인플루언서 협업으로 트래픽을 선점하고 있을 확률이 높습니다. 하반기 시즌 특수를 겨냥하여 스메그의 강점인 '디자인과 감성'을 전면 내세운 화제성 있는 마케팅 액션이 시급합니다."
-            
-    return insight
+        insight_parts.append(f"▶ [경쟁] 현재 '{top_brand}'가 차트 1위를 기록 중이며, 자사(스메그)는 지수 {smeg_score:.1f}로 이를 추격하는 양상입니다.")
+
+    # [섹션 2: 특정 이벤트 언급]
+    if spikes:
+        # 중복 제거 및 최대 2개만 언급
+        unique_spikes = list(set(spikes))[:2]
+        insight_parts.append(f"▶ [특이사항] 데이터 관찰 결과, { ' '.join(unique_spikes) } 이는 해당 시점의 특정 할인 행사나 매체 노출의 영향일 수 있습니다.")
+
+    # [섹션 3: 시즌 이슈 연계]
+    if season_comment:
+        insight_parts.append(f"▶ [시즌] {season_comment}")
+
+    # 최종 조립 (항목이 없으면 생략)
+    return "\n".join(insight_parts) if insight_parts else "특이한 트렌드 변화 없이 평이한 흐름을 보이고 있습니다."
 
 # ==========================================
 # 4. 전체 실행 및 시각화 프로세스
