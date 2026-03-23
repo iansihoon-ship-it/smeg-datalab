@@ -31,7 +31,7 @@ CATEGORIES = {
     "주방 후드": ["스메그", "팔멕", "엘리카"],
     "후드인덕션": ["스메그", "밀레", "보라", "시리우스", "가게나우"],
     "전기포트": ["스메그", "드롱기", "발뮤다"],
-    "토스트기": ["드롱기", "발뮤다"],
+    "토스트기": ["스메그", "드롱기", "발뮤다"],
     "커피머신": ["스메그", "브레빌", "유라", "필립스", "드롱기"],
     "오븐": ["스메그", "우녹스", "지에라", "에카", "베닉스"],
     "식기세척기": ["스메그", "돌핀", "우성", "호바트"],
@@ -44,9 +44,9 @@ CATEGORIES = {
 def get_datalab_trend(category, brands):
     url = "https://openapi.naver.com/v1/datalab/search"
     
-    # 최근 3개월 데이터(주간 단위) 세팅
+    # 최근 1년 데이터(주간 단위) 세팅
     end_date = datetime.now()
-    start_date = end_date - timedelta(days=90)
+    start_date = end_date - timedelta(days=365)
     
     # keywordGroups 형식으로 파라미터 구성
     keyword_groups = []
