@@ -16,16 +16,36 @@ def init_page():
 def main():
     init_page()
     
+    def process_data(data):
+        if not data or 'results' not in data:
+            return None
+        df_list = []
+        for group in data['results']:
+            title = group['title']
+            for item in group['data']:
+                df_list.append({
+                    'Date': item['period'],
+                    'Brand': title, 
+                    'Ratio': item['ratio']
+                })
+        if not df_list:
+            return None
+        df = pd.DataFrame(df_list)
+        df['Date'] = pd.to_datetime(df['Date'])
+        df_pivot = df.pivot(index='Date', columns='Brand', values='Ratio').fillna(0)
+        df_chart = df_pivot.copy()
+        df_chart.index = df_chart.index.strftime('%y-%m-%d').tolist()
+        return df_pivot, df_chart
+
     # 1. 사이드바 - 타이틀 및 카테고리 선택
     st.sidebar.title("📈 네이버 데이터랩")
     st.sidebar.markdown("""
-        네이버 데이터랩 API를 활용하여 각 카테고리별 주요 브랜드의 **최근 1년 검색 트렌드**를 제공합니다.
+        네이버 데이터랩 API를 활용하여 각 카테고리별 주요 브랜드의 **검색 트렌드 (1년/1개월/1주일)**를 제공합니다.
     """)
     st.sidebar.write("---")
     st.sidebar.header("🔍 카테고리 선택")
     category_list = list(CATEGORIES.keys())
     selected_category = st.sidebar.selectbox("비교할 카테고리를 선택하세요", category_list)
-
 
     st.subheader(f"[{selected_category}] 브랜드 트렌드 분석")
     
@@ -33,59 +53,56 @@ def main():
     brands = CATEGORIES[selected_category]
     st.write(f"**비교 브랜드:** {', '.join(brands)}")
     
-    # 2. 데이터 가져오기 및 처리
-    with st.spinner("네이버 데이터랩 API에서 데이터를 가져오는 중입니다..."):
-        data = get_datalab_trend(selected_category, brands)
+    # 2. 데이터 가져오기 및 처리 (1년 - 주간)
+    with st.spinner("최근 1년 데이터를 가져오는 중입니다..."):
+        data_1y = get_datalab_trend(selected_category, brands, period_days=365, time_unit='week')
+        processed_1y = process_data(data_1y)
         
-    if not data or 'results' not in data:
+    if not processed_1y:
         st.error("데이터를 불러오지 못했습니다. API 설정(Client ID/Secret) 또는 일일 호출 한도를 확인해주세요.")
         return
 
-    df_list = []
-    for group in data['results']:
-        title = group['title']
-        for item in group['data']:
-            df_list.append({
-                'Date': item['period'],
-                'Brand': title, 
-                'Ratio': item['ratio']
-            })
-            
-    if not df_list:
-        st.warning("조회된 데이터가 없습니다.")
-        return
-        
-    df = pd.DataFrame(df_list)
-    df['Date'] = pd.to_datetime(df['Date'])
-    df_pivot = df.pivot(index='Date', columns='Brand', values='Ratio').fillna(0)
-    
+    df_pivot_1y, df_chart_1y = processed_1y
+
     # 3. 데이터 시각화 및 결과 분석 도출
-    
-    st.markdown("### 💡 AI 트렌드 인사이트")
-    # 30자 이상 비즈니스 요약 도출
-    analysis_text = analyze_trend_short(df_pivot, selected_category)
-    
-    # X축(날짜) 포맷을 연-월-일(YY-MM-DD) 형식으로 변경 (차트 정렬 오류 방지)
-    df_chart = df_pivot.copy()
-    
-    # st.line_chart가 내부적으로 문자열 인덱스를 처리할 때 순서가 꼬이는 문제 방지
-    # 연도를 포함하여 '%y-%m-%d' 형태로 변환 (예: 25-12-25, 26-03-01 순서 보장)
-    df_chart.index = df_chart.index.strftime('%y-%m-%d').tolist()
-    
-    # 눈에 잘 띄는 성공(success) 혹은 정보(info) 알림창 활용
+    st.markdown("### 💡 AI 트렌드 인사이트 (1년 기반)")
+    analysis_text = analyze_trend_short(df_pivot_1y, selected_category)
     st.success(f"**요약 내용:**\n\n{analysis_text}")
     
     st.write("---")
     
-    st.markdown("#### 주간 트렌드 차트")
-    # 차트 그리기 (Streamlit 내장 line_chart 활용, 날짜 포맷팅된 데이터 사용)
-    st.line_chart(df_chart)
+    # --- [차트 1: 최근 1년 (주간)] ---
+    st.markdown("#### 1️⃣ 최근 1년 트렌드 (주간 단위)")
+    st.line_chart(df_chart_1y)
     
+    # --- [섹션: 최근 1개월/1주일 (일간)] ---
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### 2️⃣ 최근 1개월 트렌드 (일간 단위)")
+        with st.spinner("최근 1개월 데이터를 가져오는 중입니다..."):
+            data_1m = get_datalab_trend(selected_category, brands, period_days=30, time_unit='date')
+            processed_1m = process_data(data_1m)
+            if processed_1m:
+                st.line_chart(processed_1m[1])
+            else:
+                st.warning("1개월 데이터를 불러오지 못했습니다.")
+
+    with col2:
+        st.markdown("#### 3️⃣ 최근 1주일 트렌드 (일간 단위)")
+        with st.spinner("최근 1주일 데이터를 가져오는 중입니다..."):
+            data_1w = get_datalab_trend(selected_category, brands, period_days=7, time_unit='date')
+            processed_1w = process_data(data_1w)
+            if processed_1w:
+                st.line_chart(processed_1w[1])
+            else:
+                st.warning("1주일 데이터를 불러오지 못했습니다.")
+
     st.write("---")
     
-    st.markdown("#### 주간 상세 데이터 요약")
+    st.markdown("#### 📊 최근 상세 데이터 요약 (1년 기준)")
     # 데이터프레임 요약본 (최근 5주 표시, 포맷팅: 소수점 첫째자리 & 인덱스 월일화)
-    df_summary = df_chart.tail(5).sort_index(ascending=False).round(1)
+    df_summary = df_chart_1y.tail(5).sort_index(ascending=False).round(1)
     st.dataframe(df_summary, use_container_width=True)
 
 if __name__ == "__main__":

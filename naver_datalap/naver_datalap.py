@@ -41,12 +41,12 @@ CATEGORIES = {
 # ==========================================
 # 2. 통합 검색어 트렌드 API 호출 함수
 # ==========================================
-def get_datalab_trend(category, brands):
+def get_datalab_trend(category, brands, period_days=365, time_unit='week'):
     url = "https://openapi.naver.com/v1/datalab/search"
     
-    # 최근 1년 데이터(주간 단위) 세팅
+    # 기간 설정
     end_date = datetime.now()
-    start_date = end_date - timedelta(days=365)
+    start_date = end_date - timedelta(days=period_days)
     
     # keywordGroups 형식으로 파라미터 구성
     keyword_groups = []
@@ -70,7 +70,7 @@ def get_datalab_trend(category, brands):
     body = {
         "startDate": start_date.strftime("%Y-%m-%d"),
         "endDate": end_date.strftime("%Y-%m-%d"),
-        "timeUnit": "week", 
+        "timeUnit": time_unit, 
         "keywordGroups": keyword_groups
     }
     
