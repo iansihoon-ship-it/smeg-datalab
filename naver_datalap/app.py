@@ -77,18 +77,16 @@ def main():
     
     st.write("---")
     
-    col1, col2 = st.columns([3, 1])
+    st.markdown("#### 주간 트렌드 차트")
+    # 차트 그리기 (Streamlit 내장 line_chart 활용, 날짜 포맷팅된 데이터 사용)
+    st.line_chart(df_chart)
     
-    with col1:
-        st.markdown("#### 주간 트렌드 차트")
-        # 차트 그리기 (Streamlit 내장 line_chart 활용, 날짜 포맷팅된 데이터 사용)
-        st.line_chart(df_chart)
-        
-    with col2:
-        st.markdown("#### 주간 상세 데이터 요약")
-        # 데이터프레임 요약본 (최근 5주 표시, 포맷팅: 소수점 첫째자리 & 인덱스 월일화)
-        df_summary = df_chart.tail(5).sort_index(ascending=False).round(1)
-        st.dataframe(df_summary, use_container_width=True)
+    st.write("---")
+    
+    st.markdown("#### 주간 상세 데이터 요약")
+    # 데이터프레임 요약본 (최근 5주 표시, 포맷팅: 소수점 첫째자리 & 인덱스 월일화)
+    df_summary = df_chart.tail(5).sort_index(ascending=False).round(1)
+    st.dataframe(df_summary, use_container_width=True)
 
 if __name__ == "__main__":
     main()
