@@ -75,28 +75,15 @@ def main():
     st.markdown("#### 1️⃣ 최근 1년 트렌드 (주간 단위)")
     st.line_chart(df_chart_1y)
     
-    # --- [섹션: 최근 1개월/1주일 (일간)] ---
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("#### 2️⃣ 최근 1개월 트렌드 (일간 단위)")
-        with st.spinner("최근 1개월 데이터를 가져오는 중입니다..."):
-            data_1m = get_datalab_trend(selected_category, brands, period_days=30, time_unit='date')
-            processed_1m = process_data(data_1m)
-            if processed_1m:
-                st.line_chart(processed_1m[1])
-            else:
-                st.warning("1개월 데이터를 불러오지 못했습니다.")
-
-    with col2:
-        st.markdown("#### 3️⃣ 최근 1주일 트렌드 (일간 단위)")
-        with st.spinner("최근 1주일 데이터를 가져오는 중입니다..."):
-            data_1w = get_datalab_trend(selected_category, brands, period_days=7, time_unit='date')
-            processed_1w = process_data(data_1w)
-            if processed_1w:
-                st.line_chart(processed_1w[1])
-            else:
-                st.warning("1주일 데이터를 불러오지 못했습니다.")
+    # --- [차트 2: 최근 1개월 (일간)] ---
+    st.markdown("#### 2️⃣ 최근 1개월 트렌드 (일간 단위)")
+    with st.spinner("최근 1개월 데이터를 가져오는 중입니다..."):
+        data_1m = get_datalab_trend(selected_category, brands, period_days=30, time_unit='date')
+        processed_1m = process_data(data_1m)
+        if processed_1m:
+            st.line_chart(processed_1m[1])
+        else:
+            st.warning("1개월 데이터를 불러오지 못했습니다.")
 
     st.write("---")
     
