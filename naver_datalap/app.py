@@ -87,10 +87,5 @@ def main():
 
     st.write("---")
     
-    st.markdown("#### 📊 최근 상세 데이터 요약 (1년 기준)")
-    # 데이터프레임 요약본 (최근 5주 표시, 포맷팅: 소수점 첫째자리 & 인덱스 월일화)
-    df_summary = df_chart_1y.tail(5).sort_index(ascending=False).round(1)
-    st.dataframe(df_summary, use_container_width=True)
-
 if __name__ == "__main__":
     main()
