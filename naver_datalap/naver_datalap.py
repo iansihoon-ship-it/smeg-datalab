@@ -48,8 +48,18 @@ def get_datalab_trend(category, brands):
     end_date = datetime.now()
     start_date = end_date - timedelta(days=90)
     
-    # keywordGroups 형식으로 파라미터 구성 (검색어엔 "브랜드명 + 카테고리명" 적용, 표기 그룹명은 "브랜드명" 유지)
-    keyword_groups = [{"groupName": brand, "keywords": [f"{brand}{category}"]} for brand in brands]
+    # keywordGroups 형식으로 파라미터 구성
+    keyword_groups = []
+    for brand in brands:
+        keywords = [f"{brand}{category}", f"{brand}{category.replace(' ', '')}"]
+        # '주방 후드'의 경우 '브랜드 + 후드' 키워드가 누락되지 않도록 추가
+        if "후드" in category:
+            keywords.append(f"{brand}후드")
+        
+        keyword_groups.append({
+            "groupName": brand,
+            "keywords": list(set(keywords))  # 중복 제거
+        })
     
     body = {
         "startDate": start_date.strftime("%Y-%m-%d"),

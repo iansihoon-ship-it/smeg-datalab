@@ -3,8 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import koreanize_matplotlib
 
-# naver_datarap 모듈에서 필요한 변수 및 함수 불러오기
-from naver_datarap import CATEGORIES, get_datalab_trend, analyze_trend_short
+# naver_datalap 모듈에서 필요한 변수 및 함수 불러오기
+from naver_datalap import CATEGORIES, get_datalab_trend, analyze_trend_short
 
 def init_page():
     st.set_page_config(

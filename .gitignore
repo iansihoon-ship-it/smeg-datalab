@@ -15,6 +15,10 @@ __pycache__/
 .env
 .streamlit/secrets.toml
 
+# Databases
+*.db
+sqlite.db
+
 # Plot Images
 *.png
 *.jpg

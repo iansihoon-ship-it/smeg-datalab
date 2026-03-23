@@ -1,0 +1,42 @@
+{
+    "startDate": "2025-03-18",
+    "endDate": "2026-03-18",
+    "timeUnit": "date",
+    "results": [
+        {
+            "title": "우유거품기",
+            "keyword": [
+                "우유거품기"
+            ],
+            "data": []
+        },
+        {
+            "title": "밀크포머",
+            "keyword": [
+                "밀크포머"
+            ],
+            "data": []
+        },
+        {
+            "title": "밀크프로더",
+            "keyword": [
+                "밀크프로더"
+            ],
+            "data": []
+        },
+        {
+            "title": "에어로치노",
+            "keyword": [
+                "에어로치노"
+            ],
+            "data": []
+        },
+        {
+            "title": "우유스팀기",
+            "keyword": [
+                "우유스팀기"
+            ],
+            "data": []
+        }
+    ]
+}
