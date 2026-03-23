@@ -61,6 +61,11 @@ def get_datalab_trend(category, brands, period_days=365, time_unit='week'):
                 f"{brand}토스터", f"{brand}토스터기",
                 f"{brand} 토스트기", f"{brand} 토스터", f"{brand} 토스터기"
             ])
+        # '후드인덕션'의 경우 '후드일체형인덕션' 키워드 추가
+        if category == "후드인덕션":
+            keywords.append(f"{brand}후드일체형인덕션")
+            if brand == "밀레":
+                keywords.append("틸만후드일체형인덕션") # 사용자 요청 이미지 반영 (밀레 그룹에 틸만 포함)
         
         keyword_groups.append({
             "groupName": f"{brand}{category}", # 사용자 요청 이미지와 동일하게 라벨링 (예: 스메그토스트기)
