@@ -55,12 +55,15 @@ def get_datalab_trend(category, brands):
         # '주방 후드'의 경우 '브랜드 + 후드' 키워드가 누락되지 않도록 추가
         if "후드" in category:
             keywords.append(f"{brand}후드")
-        # '토스트기'의 경우 '토스터', '토스터기' 키워드 추가
+        # '토스트기'의 경우 '토스터', '토스터기' 및 띄어쓰기 포함 키워드 추가
         if category == "토스트기":
-            keywords.extend([f"{brand}토스터", f"{brand}토스터기"])
+            keywords.extend([
+                f"{brand}토스터", f"{brand}토스터기",
+                f"{brand} 토스트기", f"{brand} 토스터", f"{brand} 토스터기"
+            ])
         
         keyword_groups.append({
-            "groupName": brand,
+            "groupName": f"{brand}{category}", # 사용자 요청 이미지와 동일하게 라벨링 (예: 스메그토스트기)
             "keywords": list(set(keywords))  # 중복 제거
         })
     
