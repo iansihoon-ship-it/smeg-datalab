@@ -1,6 +1,7 @@
 import os
 import json
 import urllib.request
+import urllib.parse
 from datetime import datetime, timedelta
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -91,6 +92,83 @@ def get_datalab_trend(category, brands, period_days=365, time_unit='week'):
     return None
 
 # ==========================================
+# 2-1. 경쟁사 활동 이슈 수집 함수 (블로그/카페/뉴스 - 최근 1개월)
+# ==========================================
+def search_naver(query, search_type="blog", display=10):
+    """네이버 검색 API를 호출하여 블로그/카페/뉴스 결과를 가져옵니다."""
+    url = f"https://openapi.naver.com/v1/search/{search_type}.json"
+    params = urllib.parse.urlencode({
+        "query": query,
+        "display": display,
+        "start": 1,
+        "sort": "date"  # 최신순 정렬
+    })
+    full_url = f"{url}?{params}"
+    
+    request = urllib.request.Request(full_url)
+    request.add_header("X-Naver-Client-Id", CLIENT_ID)
+    request.add_header("X-Naver-Client-Secret", CLIENT_SECRET)
+    
+    try:
+        response = urllib.request.urlopen(request)
+        if response.getcode() == 200:
+            return json.loads(response.read().decode('utf-8'))
+    except urllib.error.HTTPError as e:
+        print(f"Search API Error ({search_type}): {e.code}")
+    return None
+
+def get_competitor_issues(category, brands):
+    """각 브랜드별로 블로그/카페/뉴스를 검색하여 최근 이슈 키워드를 수집합니다."""
+    import re
+    import html
+    
+    brand_issues = {}
+    
+    for brand in brands:
+        search_query = f"{brand}{category}"
+        issues = []
+        
+        # 블로그 + 카페 검색
+        for src in ["blog", "cafearticle"]:
+            result = search_naver(search_query, search_type=src, display=5)
+            if result and 'items' in result:
+                for item in result['items']:
+                    # HTML 태그 제거 후 제목 추출
+                    title = re.sub(r'<[^>]+>', '', html.unescape(item.get('title', '')))
+                    issues.append(title)
+        
+        # 뉴스 검색
+        news_result = search_naver(search_query, search_type="news", display=5)
+        if news_result and 'items' in news_result:
+            for item in news_result['items']:
+                title = re.sub(r'<[^>]+>', '', html.unescape(item.get('title', '')))
+                issues.append(f"[뉴스] {title}")
+        
+        if issues:
+            brand_issues[brand] = issues
+    
+    return brand_issues
+
+def summarize_competitor_issues(brand_issues, category):
+    """수집된 경쟁사 이슈를 요약 텍스트로 정리합니다."""
+    if not brand_issues:
+        return ""
+    
+    summary_parts = []
+    for brand, titles in brand_issues.items():
+        if not titles:
+            continue
+        # 최대 3개 제목만 대표로 선정
+        top_titles = titles[:3]
+        titles_str = " / ".join(top_titles)
+        summary_parts.append(f"  • **{brand}{category}**: {titles_str}")
+    
+    if not summary_parts:
+        return ""
+    
+    return "\n".join(summary_parts)
+
+# ==========================================
 # 3. 비즈니스 인사이트 트렌드 분석 함수 (스메그 마케터 관점)
 # ==========================================
 # 카테고리별 주요 시즌 이슈 정의
@@ -103,7 +181,7 @@ SEASON_ISSUES = {
     "오븐": {"months": [11, 12, 2], "issue": "홈베이킹 및 졸업/입학 시즌 선물 수요가 발생하는 시기입니다."}
 }
 
-def analyze_trend_short(df_pivot, selected_category=""):
+def analyze_trend_short(df_pivot, selected_category="", competitor_issues=None):
     if len(df_pivot) < 4:
         return "데이터가 충분하지 않아 상세 분석이 어렵습니다."
     
@@ -113,7 +191,6 @@ def analyze_trend_short(df_pivot, selected_category=""):
     smeg_score = last_week.get("스메그", 0)
     
     # 2. 급상승(스파이크) 감지 로직
-    # 전주 대비 20% 이상 급상승한 일자와 브랜드 탐색
     diff_pct = (df_pivot.pct_change() * 100).fillna(0)
     spikes = []
     
@@ -144,13 +221,18 @@ def analyze_trend_short(df_pivot, selected_category=""):
 
     # [섹션 2: 특정 이벤트 언급]
     if spikes:
-        # 중복 제거 및 최대 2개만 언급
         unique_spikes = list(set(spikes))[:2]
         insight_parts.append(f"▶ [특이사항] 데이터 관찰 결과, { ' '.join(unique_spikes) } 이는 해당 시점의 특정 할인 행사나 매체 노출의 영향일 수 있습니다.")
 
     # [섹션 3: 시즌 이슈 연계]
     if season_comment:
         insight_parts.append(f"▶ [시즌] {season_comment}")
+
+    # [섹션 4: 경쟁사 활동 이슈 (최근 1개월 블로그/카페/뉴스)]
+    if competitor_issues:
+        issue_summary = summarize_competitor_issues(competitor_issues, selected_category)
+        if issue_summary:
+            insight_parts.append(f"▶ [경쟁사 활동 이슈 - 최근 1개월]\n{issue_summary}")
 
     # 최종 조립 (항목 간 간격 추가)
     return "\n\n".join(insight_parts) if insight_parts else "특이한 트렌드 변화 없이 평이한 흐름을 보이고 있습니다."

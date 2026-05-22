@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import koreanize_matplotlib
 
 # naver_datalap 모듈에서 필요한 변수 및 함수 불러오기
-from naver_datalap import CATEGORIES, get_datalab_trend, analyze_trend_short
+from naver_datalap import CATEGORIES, get_datalab_trend, analyze_trend_short, get_competitor_issues
 
 def init_page():
     st.set_page_config(
@@ -65,8 +65,13 @@ def main():
     df_pivot_1y, df_chart_1y = processed_1y
 
     # 3. 데이터 시각화 및 결과 분석 도출
-    st.markdown("### 💡 AI 트렌드 인사이트 (1년 기반)")
-    analysis_text = analyze_trend_short(df_pivot_1y, selected_category)
+    st.markdown("### 💡 AI 트렌드 인사이트")
+    
+    # 경쟁사 활동 이슈 수집 (최근 1개월 블로그/카페/뉴스)
+    with st.spinner("경쟁사 활동 이슈를 수집하는 중입니다..."):
+        competitor_issues = get_competitor_issues(selected_category, brands)
+    
+    analysis_text = analyze_trend_short(df_pivot_1y, selected_category, competitor_issues=competitor_issues)
     st.success(f"**요약 내용:**\n\n{analysis_text}")
     
     st.write("---")
