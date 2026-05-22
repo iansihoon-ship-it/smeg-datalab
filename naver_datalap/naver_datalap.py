@@ -118,9 +118,16 @@ def search_naver(query, search_type="blog", display=10):
     return None
 
 def get_competitor_issues(category, brands):
-    """각 브랜드별로 블로그/카페/뉴스를 검색하여 최근 이슈 키워드를 수집합니다."""
+    """각 브랜드별로 블로그/카페/뉴스를 검색하여 최근 1개월 이내 마케팅 관련 이슈만 수집합니다."""
     import re
     import html
+    
+    # 마케팅 활동 관련 필터 키워드
+    ISSUE_KEYWORDS = ["신제품", "프로모션", "할인", "공구", "쇼핑라이브", "라이브커머스", "유튜브",
+                      "라이브", "신상", "출시", "특가", "세일"]
+    
+    # 최근 1개월 기준일 계산
+    one_month_ago = datetime.now() - timedelta(days=30)
     
     brand_issues = {}
     
@@ -130,38 +137,78 @@ def get_competitor_issues(category, brands):
         
         # 블로그 + 카페 검색
         for src in ["blog", "cafearticle"]:
-            result = search_naver(search_query, search_type=src, display=5)
+            result = search_naver(search_query, search_type=src, display=10)
             if result and 'items' in result:
                 for item in result['items']:
+                    # 발행일 확인 (yyyymmdd 형식)
+                    postdate = item.get('postdate', '')
+                    if postdate:
+                        try:
+                            pub_dt = datetime.strptime(postdate, '%Y%m%d')
+                            if pub_dt < one_month_ago:
+                                continue  # 1개월 이전 게시글은 건너뜀
+                        except ValueError:
+                            pass
+                    
                     # HTML 태그 제거 후 제목 추출
                     title = re.sub(r'<[^>]+>', '', html.unescape(item.get('title', '')))
-                    issues.append(title)
+                    
+                    # 마케팅 관련 키워드가 포함된 것만 필터링
+                    if any(kw in title for kw in ISSUE_KEYWORDS):
+                        # 30자 이내로 축약
+                        short_title = title[:30] + "…" if len(title) > 30 else title
+                        issues.append(short_title)
         
         # 뉴스 검색
-        news_result = search_naver(search_query, search_type="news", display=5)
+        news_result = search_naver(search_query, search_type="news", display=10)
         if news_result and 'items' in news_result:
             for item in news_result['items']:
+                # 뉴스 발행일 확인 (RFC 822 형식: Thu, 22 May 2026 09:00:00 +0900)
+                pub_date_str = item.get('pubDate', '')
+                if pub_date_str:
+                    try:
+                        from email.utils import parsedate_to_datetime
+                        pub_dt = parsedate_to_datetime(pub_date_str)
+                        pub_dt = pub_dt.replace(tzinfo=None)  # timezone 제거하여 비교
+                        if pub_dt < one_month_ago:
+                            continue
+                    except Exception:
+                        pass
+                
                 title = re.sub(r'<[^>]+>', '', html.unescape(item.get('title', '')))
-                issues.append(f"[뉴스] {title}")
+                
+                if any(kw in title for kw in ISSUE_KEYWORDS):
+                    short_title = title[:30] + "…" if len(title) > 30 else title
+                    issues.append(f"[뉴스] {short_title}")
         
-        if issues:
-            brand_issues[brand] = issues
+        # 중복 제거
+        brand_issues[brand] = list(dict.fromkeys(issues))
     
     return brand_issues
 
 def summarize_competitor_issues(brand_issues, category):
-    """수집된 경쟁사 이슈를 요약 텍스트로 정리합니다."""
+    """수집된 경쟁사 이슈를 브랜드별 줄바꿈 및 하위 글머리 기호로 정리합니다."""
     if not brand_issues:
         return ""
     
     summary_parts = []
     for brand, titles in brand_issues.items():
         if not titles:
+            # 해당 브랜드에 매칭 이슈가 없으면 '특이사항 없음' 표시
+            summary_parts.append(f"  • **{brand}**: 특이사항 없음")
             continue
-        # 최대 3개 제목만 대표로 선정
-        top_titles = titles[:3]
-        titles_str = " / ".join(top_titles)
-        summary_parts.append(f"  • **{brand}{category}**: {titles_str}")
+        
+        # 브랜드명 표기
+        brand_line = f"  • **{brand}**"
+        if len(titles) == 1:
+            # 이슈가 1개면 같은 줄에 표기
+            brand_line += f": {titles[0]}"
+            summary_parts.append(brand_line)
+        else:
+            # 이슈가 여러 개면 하위 글머리 기호로 줄바꿈
+            summary_parts.append(brand_line)
+            for t in titles[:5]:  # 최대 5개까지만
+                summary_parts.append(f"    ◦ {t}")
     
     if not summary_parts:
         return ""
