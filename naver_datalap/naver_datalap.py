@@ -132,6 +132,9 @@ def get_competitor_issues(category, brands):
     brand_issues = {}
     
     for brand in brands:
+        if brand == "스메그":
+            continue
+            
         search_query = f"{brand}{category}"
         issues = []
         
@@ -142,21 +145,26 @@ def get_competitor_issues(category, brands):
                 for item in result['items']:
                     # 발행일 확인 (yyyymmdd 형식)
                     postdate = item.get('postdate', '')
+                    date_str = ""
                     if postdate:
                         try:
                             pub_dt = datetime.strptime(postdate, '%Y%m%d')
                             if pub_dt < one_month_ago:
                                 continue  # 1개월 이전 게시글은 건너뜀
+                            date_str = pub_dt.strftime('%m/%d')
                         except ValueError:
-                            pass
+                            if len(postdate) == 8:
+                                date_str = f"{postdate[4:6]}/{postdate[6:8]}"
                     
                     # HTML 태그 제거 후 제목 추출
                     title = re.sub(r'<[^>]+>', '', html.unescape(item.get('title', '')))
                     
                     # 마케팅 관련 키워드가 포함된 것만 필터링
                     if any(kw in title for kw in ISSUE_KEYWORDS):
-                        # 30자 이내로 축약
-                        short_title = title[:30] + "…" if len(title) > 30 else title
+                        # 50자 이내로 축약
+                        short_title = title[:50] + "…" if len(title) > 50 else title
+                        if date_str:
+                            short_title = f"{short_title} ({date_str})"
                         issues.append(short_title)
         
         # 뉴스 검색
@@ -165,6 +173,7 @@ def get_competitor_issues(category, brands):
             for item in news_result['items']:
                 # 뉴스 발행일 확인 (RFC 822 형식: Thu, 22 May 2026 09:00:00 +0900)
                 pub_date_str = item.get('pubDate', '')
+                date_str = ""
                 if pub_date_str:
                     try:
                         from email.utils import parsedate_to_datetime
@@ -172,13 +181,17 @@ def get_competitor_issues(category, brands):
                         pub_dt = pub_dt.replace(tzinfo=None)  # timezone 제거하여 비교
                         if pub_dt < one_month_ago:
                             continue
+                        date_str = pub_dt.strftime('%m/%d')
                     except Exception:
                         pass
                 
                 title = re.sub(r'<[^>]+>', '', html.unescape(item.get('title', '')))
                 
                 if any(kw in title for kw in ISSUE_KEYWORDS):
-                    short_title = title[:30] + "…" if len(title) > 30 else title
+                    # 50자 이내로 축약
+                    short_title = title[:50] + "…" if len(title) > 50 else title
+                    if date_str:
+                        short_title = f"{short_title} ({date_str})"
                     issues.append(f"[뉴스] {short_title}")
         
         # 중복 제거
@@ -193,22 +206,25 @@ def summarize_competitor_issues(brand_issues, category):
     
     summary_parts = []
     for brand, titles in brand_issues.items():
+        if brand == "스메그":
+            continue
+            
+        brand_name = f"{brand}{category}"
+        
         if not titles:
             # 해당 브랜드에 매칭 이슈가 없으면 '특이사항 없음' 표시
-            summary_parts.append(f"  • **{brand}**: 특이사항 없음")
+            summary_parts.append(f"- **{brand_name}**: 특이사항 없음")
             continue
         
         # 브랜드명 표기
-        brand_line = f"  • **{brand}**"
         if len(titles) == 1:
             # 이슈가 1개면 같은 줄에 표기
-            brand_line += f": {titles[0]}"
-            summary_parts.append(brand_line)
+            summary_parts.append(f"- **{brand_name}**: {titles[0]}")
         else:
             # 이슈가 여러 개면 하위 글머리 기호로 줄바꿈
-            summary_parts.append(brand_line)
+            summary_parts.append(f"- **{brand_name}**")
             for t in titles[:5]:  # 최대 5개까지만
-                summary_parts.append(f"    ◦ {t}")
+                summary_parts.append(f"  - {t}")
     
     if not summary_parts:
         return ""
@@ -279,7 +295,7 @@ def analyze_trend_short(df_pivot, selected_category="", competitor_issues=None):
     if competitor_issues:
         issue_summary = summarize_competitor_issues(competitor_issues, selected_category)
         if issue_summary:
-            insight_parts.append(f"▶ [경쟁사 활동 이슈 - 최근 1개월]\n{issue_summary}")
+            insight_parts.append(f"▶ [경쟁사 활동 이슈 - 최근 1개월]\n\n{issue_summary}")
 
     # 최종 조립 (항목 간 간격 추가)
     return "\n\n".join(insight_parts) if insight_parts else "특이한 트렌드 변화 없이 평이한 흐름을 보이고 있습니다."
