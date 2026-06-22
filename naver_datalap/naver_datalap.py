@@ -159,8 +159,8 @@ def get_competitor_issues(category, brands):
                     # HTML 태그 제거 후 제목 추출
                     title = re.sub(r'<[^>]+>', '', html.unescape(item.get('title', '')))
                     
-                    # 마케팅 관련 키워드가 포함된 것만 필터링
-                    if any(kw in title for kw in ISSUE_KEYWORDS):
+                    # 마케팅 관련 키워드와 브랜드명이 제목에 모두 포함된 것만 필터링
+                    if brand in title and any(kw in title for kw in ISSUE_KEYWORDS):
                         # 50자 이내로 축약
                         short_title = title[:50] + "…" if len(title) > 50 else title
                         if date_str:
@@ -187,7 +187,7 @@ def get_competitor_issues(category, brands):
                 
                 title = re.sub(r'<[^>]+>', '', html.unescape(item.get('title', '')))
                 
-                if any(kw in title for kw in ISSUE_KEYWORDS):
+                if brand in title and any(kw in title for kw in ISSUE_KEYWORDS):
                     # 50자 이내로 축약
                     short_title = title[:50] + "…" if len(title) > 50 else title
                     if date_str:
